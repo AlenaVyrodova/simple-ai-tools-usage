@@ -46,74 +46,66 @@ public class OpenAIClient {
     }
 
     public Message responseWithMessage(List<Message> messages) throws Exception {
-        //todo: 1. Create request, you need to implement method `createRequest(List<Message> messages)`
-        //todo: 2. (Optional) print generated request to console, it will help to see JSON request
-        //todo:              you can use `mapper.writerWithDefaultPrettyPrinter().writeValueAsString(request))`
-        //todo:              or `mapper.writeValueAsString(request))`
-        //todo: 3. Generate HttpRequest, you need to implement method `generateRequest(ObjectNode request)`
-        //todo: 4. Send request and get response body (to handle response body use `HttpResponse.BodyHandlers.ofString()`)
-        //todo: 5. Read response body to ChatCompletion (mapper.readValue(...))
-        //todo: 6. (Optional) print generated response to console, it will help to see JSON response
-        //todo:              you can use `mapper.writerWithDefaultPrettyPrinter().writeValueAsString(response))`
-        //todo:              or `mapper.writeValueAsString(response))`
-        //todo: 7. Get first Choice from ChatCompletion
-        //todo: 8. Get `message` from Choice
-        //todo: 9.1. If tool_calls are present in Choice (`finish_reason` is `tool_calls`):
-        //todo:      - get `tool_calls`
-        //todo:      - add AI message to history
-        //todo:      - call processToolCalls(List<Message> messages, List<ToolCall> toolCalls)
-        //todo:      - then call recursively `responseWithMessage(List<Message> messages)` (it will provide final response)
-        //todo: 9.2. Otherwise return Message with AI response
+        Map<String,Object> requestBody = createRequest(messages);
+        HttpRequest  httpRequest = generateRequest(requestBody);
+        String response = httpClient.send(httpRequest,HttpResponse.BodyHandlers.ofString()).body();
+        ChatCompletion chatCompletion = mapper.readValue(response,ChatCompletion.class);
+        Choice choice = chatCompletion.choices().getFirst();
+        Message message = choice.message();
 
-        throw new RuntimeException("Not implemented");
+        if(choice.finishReason().equals("tool_calls")){
+            messages.add(message);
+            processToolCalls(messages,message.getToolCalls());
+            return responseWithMessage(messages);
+        }
+return  message;
     }
 
     private Map<String, Object> createRequest(List<Message> messages) {
-        //todo: Create map of such params
-        //todo:     - `model`
-        //todo:     - `messages`
-        //todo:     - `tools`
 
-        throw new RuntimeException("Not implemented");
+       return Map.of(
+               "model",this.model.getValue(),
+               "messages",messages,
+               "tools", this.tools
+       );
     }
 
     private HttpRequest generateRequest(Map<String, Object> requestBody) throws JsonProcessingException {
-        //todo: Use HttpRequest builder to create http request:
-        //todo: - Add token
-        //todo: - Add content type
-        //todo: - Make POST request with `requestBody` as string
-
-        throw new RuntimeException("Not implemented");
+        return  HttpRequest.newBuilder()
+                .uri(Constant.OPEN_AI_API_URI)
+                .header("Content-Type", "application/json")
+                .header("Authorization","Bearer "+this.apiKey)
+                .POST(HttpRequest.BodyPublishers.ofString(mapper.writeValueAsString(requestBody)))
+                .build();
     }
 
     private void processToolCalls(List<Message> messages, List<ToolCall> toolCalls) {
-        //todo: Iterate through `toolCalls`
-        //todo: Get:
-        //todo:     - tool call id
-        //todo:     - function name
-        //todo:     - function arguments
-        //todo: Call `executeTool(String functionName, Map<String, Object> arguments)`. Pay attention that we have simplified
-        //todo:       version of tool calls and extract args on the tool level from the `Map<String, Object>  arguments`
-        //todo: Add message to messages list:
-        //todo:     - role: `tool`
-        //todo:     - tool_call_id: original tool call is (call_abc...)
-        //todo:     - name: function name
-        //todo:     - content: execution result
-        //todo: (Optional) print generated response to console, it will help to see function result
-
-        throw new RuntimeException("Not implemented");
+      toolCalls.parallelStream()
+              .forEach(toolCall ->
+              {
+                  String toolCallId = toolCall.id();
+                  String funcName =toolCall.function().name();
+                  Map<String,Object> arguments = toolCall.function().arguments();
+                  String toolResponse =executeTool(funcName,arguments);
+                  messages.add(
+                          Message.builder()
+                                  .role(Role.TOOL)
+                                  .toolCallId(toolCallId)
+                                  .name(funcName)
+                                  .content(toolResponse)
+                                  .build()
+                  );
+              });
     }
 
     private String executeTool(String functionName, Map<String, Object> arguments) {
-        //todo: Here we will hardcode the switch that will execute tools
-        //todo: Use switch on the functionName:
-        //todo: Case `simple_calculator` -> new MathTool().execute(arguments) (already implemented)
-        //todo: Case `nasa_image_stealer` -> new ImageStealerTool(apiKey).execute(arguments) (already implemented)
-        //todo: Case `haiku_generation_tool` -> new HaikuGeneratorTool(apiKey).execute(arguments) (need to implemented)
-        //todo: Case `web_search_tool` -> new WebSearchTool(apiKey).execute(arguments) (need to implemented)
-        //todo: default case -> "`Unknown function` + functionName"
-        //todo: Use Constants from Constant class instead of magic strings
+       return switch (functionName){
+           case Constant.SIMPLE_CALCULATOR -> new MathTool().execute(arguments);
+           case Constant.NASA_IMG_STEALER -> new ImageStealerTool(this.apiKey).execute(arguments);
+           case Constant.WEB_SEARCH -> new WebSearchTool(this.apiKey).execute(arguments);
+           case Constant.HAIKU_GENERATOR -> new HaikuGeneratorTool(this.apiKey).execute(arguments);
+           default -> "Unknown function" + functionName;
+       };
 
-        throw new RuntimeException("Not implemented");
     }
 }

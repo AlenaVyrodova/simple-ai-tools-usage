@@ -20,10 +20,11 @@ public class ChatApp {
                 Model.GPT_4o,
                 Constant.API_KEY,
                 List.of(
-                        //todo: 1. Provide tool for math simple calculations (ChatApp#generateMathToolDescription(), already implemented)
-                        //todo: 2. Provide tool for extraction NASA largest image description (ChatApp#generateNasaToolStealerDescription(), Need to implement)
-                        //todo: 3. (Optional) Provide tool for haiku generation (ChatApp#haikuQueryToolDescription(), Need to implement)
-                        //todo: 4. (Optional) Provide tool for WEB search (ChatApp#webSearchToolDescription(), Need to implement)
+                        generateMathToolDescription(),
+                        generateNasaToolStealerDescription(),
+                        haikuQueryToolDescription(),
+                        searchToolDescription()
+
                 )
         );
 
@@ -144,9 +145,25 @@ public class ChatApp {
      * </pre>
      */
     private static Map<String, Object> generateNasaToolStealerDescription() {
-        //todo: Provide description similar to JSON above.
-        //todo: Pay attention that function name is already present in constants (Constant.NASA_IMG_STEALER)
-        throw new RuntimeException("Not implemented");
+        return Map.of(
+                "type", "function",
+                "function", Map.of(
+                        "name", Constant.NASA_IMG_STEALER,
+                        "description", "This tools provides description of the largest NASA image by Mars sol",
+                        "parameters", Map.of(
+                                "type", "object",
+                                "properties", Map.of(
+                                        "sol", Map.of(
+                                                "type", "number",
+                                                "description", "Sol of Mars")
+                                        ),
+
+                                "required", List.of("sol"),
+                                "additionalProperties", false
+                        ),
+                        "strict", true
+                )
+        );
     }
 
     /**
@@ -173,10 +190,25 @@ public class ChatApp {
      * </pre>
      */
     private static Map<String, Object> haikuQueryToolDescription() {
-        //todo: Provide description similar to JSON above.
-        //todo: Pay attention that function name is already present in constants (Constant.HAIKU_GENERATOR)
-        //todo: Need to implement such tool
-        throw new RuntimeException("Not implemented");
+        return Map.of(
+                "type", "function",
+                "function", Map.of(
+                        "name", Constant.HAIKU_GENERATOR,
+                        "description", "Special tool that is super experienced in Haiku generation ",
+                        "parameters", Map.of(
+                                "type", "object",
+                                "properties", Map.of(
+                                        "query", Map.of(
+                                                "type", "string",
+                                                "description", "Description of Haiku that should be generated"
+                                        )
+                                ),
+                                "required", List.of("query"),
+                                "additionalProperties", false
+                        ),
+                        "strict", true
+                )
+        );
     }
 
     /**
@@ -203,9 +235,24 @@ public class ChatApp {
      * </pre>
      */
     private static Map<String, Object> searchToolDescription() {
-        //todo: Provide description similar to JSON above.
-        //todo: Pay attention that function name is already present in constants (Constant.WEB_SEARCH)
-        //todo: Need to implement such tool
-        throw new RuntimeException("Not implemented");
+        return Map.of(
+                "type", "function",
+                "function", Map.of(
+                        "name", Constant.WEB_SEARCH,
+                        "description", "Tool for performing a web search based on a query string.",
+                        "parameters", Map.of(
+                                "type", "object",
+                                "properties", Map.of(
+                                        "request", Map.of(
+                                                "type", "string",
+                                                "description", "Search request"
+                                        )
+                                ),
+                                "required", List.of("request"),
+                                "additionalProperties", false
+                        ),
+                        "strict", true
+                )
+        );
     }
 }
